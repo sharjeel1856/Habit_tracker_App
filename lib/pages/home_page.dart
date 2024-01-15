@@ -1,29 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:habit_tracking/componets/floating_btn.dart';
+import 'package:habit_tracking/data/habit_database.dart';
+import 'package:hive/hive.dart';
 
 import '../componets/habit_tile.dart';
 import '../componets/my_alert_box.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({Key? key}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  //data strcturs for todays list
-  //[habitName , HabitCompleted ]
-  List todaysHabitList = [
-    ["Morning Run", false],
-    ["Read Book", false],
-  ];
-  //bool to control habit completed
-  bool habitCompleted = false;
+  //Creating Instance of Habit DataBase
+  HabitDatabase db = HabitDatabase();
+  final _myBox = Hive.box("Habit_Database");
+
+  @override
+  void initState() {
+    //if there is on current habit list, then it is 1st time ever opened app
+    //then crate default data
+    if (_myBox.get("CURRENT_HABIT_LIST") == null) {
+      db.createDefaultData();
+    }
+    //their is already an data exists , their is no first time
+    else {
+      db.loadData();
+    }
+    //update the database
+    db.updateDatabase();
+    super.initState();
+  }
+
   //checkbox was tapped
   void checkBoxTapped(bool? value, int index) {
     setState(() {
-      todaysHabitList[index][1] = value;
+      db.todaysHabitList[index][1] = value;
     });
   }
 
@@ -37,8 +51,9 @@ class _HomePageState extends State<HomePage> {
       builder: (context) {
         return MYAlertBox(
           controller: _newHabitNameController,
+          hintText: 'Enter Habit Name...',
           onSave: saveNewHabit,
-          onCancel: cancelNewHabit,
+          onCancel: cancelDialogBox,
         );
       },
     );
@@ -48,7 +63,7 @@ class _HomePageState extends State<HomePage> {
   void saveNewHabit() {
     //add new habit to todays habit list
     setState(() {
-      todaysHabitList.add([_newHabitNameController.text, false]);
+      db.todaysHabitList.add([_newHabitNameController.text, false]);
     });
 
     //to clear the text-feild
@@ -58,7 +73,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   //cancel new habit
-  void cancelNewHabit() {
+  void cancelDialogBox() {
     //to clear the text-feild
     _newHabitNameController.clear();
     //pop dialog box
@@ -72,13 +87,29 @@ class _HomePageState extends State<HomePage> {
       builder: (context) {
         return MYAlertBox(
           controller: _newHabitNameController,
-          //onSave: () => saveExistingHabit(index),
-          //onCancel: cancelDialogBox,
+          hintText: db.todaysHabitList[index][0],
+          onSave: () => saveExixitingHabit(index),
+          onCancel: cancelDialogBox,
         );
       },
     );
   }
-  //save
+
+  //save existing habit with a new name
+  void saveExixitingHabit(int index) {
+    setState(() {
+      db.todaysHabitList[index][0] = _newHabitNameController.text;
+    });
+    _newHabitNameController.clear();
+    Navigator.pop(context);
+  }
+
+  // delete habit
+  void deleteHabit(int index) {
+    setState(() {
+      db.todaysHabitList.removeAt(index);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,13 +120,14 @@ class _HomePageState extends State<HomePage> {
         onPressed: () => createNewHabit(),
       ),
       body: ListView.builder(
-          itemCount: todaysHabitList.length,
+          itemCount: db.todaysHabitList.length,
           itemBuilder: (context, index) {
             return HabitTile(
-              habitName: todaysHabitList[index][0],
-              habitCompleted: todaysHabitList[index][1],
+              habitName: db.todaysHabitList[index][0],
+              habitCompleted: db.todaysHabitList[index][1],
               onChanged: (value) => checkBoxTapped(value, index),
-              settingsTapped: (context) => openHabitSettings(index),
+              settingsTapped: (context) => openHabitSetings(index),
+              deleteTapped: (context) => deleteHabit(index),
             );
           }),
     );

@@ -7,11 +7,14 @@ class MYAlertBox extends StatefulWidget {
   final VoidCallback onCancel;
   //These are the two functions that are used for te functionality
   // of Save and Cancel button on the dialog box.
+  final String hintText;
+  //This function is used to show hint on dialogbox of in the Text Feild
   const MYAlertBox(
       {Key? key,
       required this.controller,
       required this.onSave,
-      required this.onCancel})
+      required this.onCancel,
+      required this.hintText})
       : super(key: key);
 
   @override
@@ -25,8 +28,10 @@ class _EnterNewHabitBoxState extends State<MYAlertBox> {
       backgroundColor: Colors.grey[900],
       content: TextField(
         controller: widget.controller,
-        style: TextStyle(color: Color.fromRGBO(255, 255, 255, 1)),
+        style: const TextStyle(color: Color.fromRGBO(255, 255, 255, 1)),
         decoration: InputDecoration(
+          hintText: widget.hintText, // Fix here
+          hintStyle: TextStyle(color: Colors.grey),
           enabledBorder:
               OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
           focusedBorder:
